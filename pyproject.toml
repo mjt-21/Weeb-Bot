@@ -8,6 +8,7 @@ authors = ["Your Name <you@example.com>"]
 python = "^3.8"
 discord = "^1.7.3"
 mal = "^0.4.0"
+google-api-python-client = "^2.14.0"
 
 [tool.poetry.dev-dependencies]
 
