@@ -5,10 +5,6 @@ import json
 from googleapiclient.discovery import build
 import random
 from discord.ext import commands
-
-############# MYANIMELIST API #############
-CLIENT_ID = os.environ['CLIENT_ID']
-CLIENT_SECRET = os.environ['CLIENT_SECRET']
  
 ######### DISCORD API TOKEN #########
 
@@ -20,30 +16,31 @@ search_engine_id = os.environ['SEARCH_ENGINE_ID']
 
 ##### FUNCTIONS #####
 
-# Test the MAL API by requesting your profile information
-def print_user_info(access_token: str):
-    url = 'https://api.myanimelist.net/v2/users/@me'
-    response = requests.get(url, headers = {
-        'Authorization': f'Bearer {access_token}'
-        })
-    
-    response.raise_for_status()
-    user = response.json()
-    response.close()
+def getAnimeRankings(count = 10):
+    try:
+        if int(count) > 20 or int(count) < 1:
+            count = 10
+    except:
+        count = 10
 
-    print(f"\n>>> Greetings {user['name']}! <<<")
+    query = '''
+    query {{
+        Page (page: 1, perPage: {count}) {{
+        media (type: ANIME, sort: POPULARITY_DESC) {{
+            id
+            title {{
+            romaji
+            english
+            native
+            }}
+        }}
+    }}
+    }}
+    '''.format(count=count)
+    url = 'https://graphql.anilist.co'
+    response = requests.post(url, json={'query': query})
 
-def getAnimeRankings(access_token: str):
-    url = 'https://api.myanimelist.net/v2/anime/ranking'
-    response = requests.get(url, headers = {
-        'Authorization': f'Bearer {access_token}'
-        })
-    
-    response.raise_for_status()
-    rankingsData = response.json()
-    response.close()
-
-    return rankingsData
+    return response.json()
 
 def getQuote():
     response = requests.get("https://animechan.vercel.app/api/random")
@@ -52,9 +49,6 @@ def getQuote():
     return quote
 
 ############# DISCORD COMMANDS #############
-
-# Test access to MAL
-print_user_info(discord_token)
 
 # Set up discord commands (bot)
 bot = commands.Bot(command_prefix='$')
@@ -97,12 +91,18 @@ async def quote(ctx):
     await ctx.send(quote)    
 
 @bot.command()
-async def animerankings(ctx):
-    rankings = getAnimeRankings(discord_token)
-    toSend = 'Anime Rankings (full list at <https://myanimelist.net/topanime.php>):\n'
+async def animerankings(ctx, *args):
+    if len(args) >= 1:
+        rankings = getAnimeRankings(args[0])
+        print("ur mom")
+    else:
+        rankings = getAnimeRankings()
+        print("ur dad")
 
-    for anime in rankings['data']:
-        toSend += '\n#' + str(anime['ranking']['rank']) + ': ' + anime['node']['title']
+    toSend = 'Anime Rankings (full list at <https://anilist.co/search/anime/popular>):\n'
+
+    for i, show in enumerate(rankings['data']['Page']['media']):
+        toSend += "#" + str(i + 1) + ": " + show['title']['english'] + '\n'
 
     await ctx.send(toSend)
 
@@ -112,7 +112,7 @@ async def help(ctx):
 \$help -- Get a list of working commands
 \$hello  -- Say hello to the bot! What will they reply?
 \$quote -- Let the bot tell you a random anime quote!
-\$animerankings -- List of current top 10 most popular anime
+\$animerankings [number of results; OPTIONAL] -- Current most popular anime! (default: 10, maximum: 20)
 \$pic [search term(s)] -- Search for pictures from online"""
     await ctx.send(toSend)
 
@@ -128,7 +128,7 @@ async def pic(ctx, *args):
 
     try:
         url = result["items"][ran]["link"]
-        embed1 = discord.Embed(title=f"Image of {search}")
+        embed1 = discord.Embed(title=f"Image of {search} (requested by {ctx.message.author})")
         embed1.set_image(url=url)
         await ctx.send(embed=embed1)
     except:
