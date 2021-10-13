@@ -1,5 +1,5 @@
 # Weeb-Bot
-Discord bot made with Python, the MyAnimeList API,  Animechan quotes API, and Google Search Engine API.  
+Discord bot made with Python, the Anilist API,  Animechan quotes API, and Google Search Engine API.  
 
 Current commands:  
 $help -- Get a list of working commands  
